@@ -1,0 +1,70 @@
+version: '3.9'
+services:
+  rabbitmq:
+    image: rabbitmq:3.10-management
+    container_name: rabbitmq-container
+    restart: always
+    ports:
+      - 5672:5672
+      - 15672:15672
+    network_mode: product-network
+
+  product-service:
+    image: product_image
+    container_name: product-service
+    build: UserProductService/
+    restart: always
+    network_mode: product-network
+    ports:
+      - 8099:8099
+    depends_on:
+      - mongo-service1
+      - spring-cloud-api-gateway
+    environment:
+      SPRING_RABBITMQ_HOST: rabbitmq-container
+
+  mongo-service1:
+    image: mongo
+    container_name: mongo-service1
+    ports:
+      - 27017:27017
+    network_mode: product-network
+
+  authentication-service:
+    image: authentication_image
+    container_name: authentication-service
+    build: UserAuthenticationService/
+    restart: always
+    network_mode: product-network
+    ports:
+      - 8091:8091
+    depends_on:
+      - mysql-service1
+      - spring-cloud-api-gateway
+    environment:
+      SPRING_RABBITMQ_HOST: rabbitmq-container
+
+  mysql-service1:
+    image: mysql:latest
+    container_name: mysql-service1
+    network_mode: product-network
+    ports:
+      - 3306:3306
+
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_USERNAME: root
+      MYSQL_PASSWORD: root
+      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+
+  spring-cloud-api-gateway:
+    container_name: spring-cloud-api-gateway
+    build: SpringCloudAPIGateway/
+    network_mode: product-network
+    ports:
+      - 9200:9200
+
+
+networks:
+  product-network:
+    driver: bridge
